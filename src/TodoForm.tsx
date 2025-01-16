@@ -1,14 +1,15 @@
-import { internalStore, useCustomStore } from "./store";
+import { internalStore, useCustomStore, State } from "./store";
 
 const TodoForm = () => {
-  const store = useCustomStore();
+  const {currentTodo, currentRank} = useCustomStore(['currentTodo', 'currentRank'] as unknown as keyof State[]);
+  
   return (
     <div className="item">
       <form>
         <input
           type="text"
           placeholder="ToDo name"
-          value={store.currentTodo}
+          value={currentTodo}
           onChange={(event: any) =>
             internalStore.setPartial({ currentTodo: event.target.value })
           }
@@ -16,7 +17,7 @@ const TodoForm = () => {
         <select
           name="todoRank"
           id="todoRank"
-          value={store.currentRank}
+          value={currentRank}
           onChange={(event: any) =>
             internalStore.setPartial({ currentRank: event.target.value })
           }
@@ -26,7 +27,7 @@ const TodoForm = () => {
           <option value="2">2</option>
           <option value="3">3</option>
         </select>
-        <button type="button" disabled={!store.currentTodo || !store.currentRank} onClick={() => internalStore.addTodo()}>Add ToDo</button>
+        <button type="button" disabled={!currentTodo || !currentRank} onClick={() => internalStore.addTodo()}>Add ToDo</button>
       </form>
     </div>
   );

@@ -6,7 +6,7 @@ interface ToDo {
   rank: string;
 }
 
-interface State {
+export interface State {
   todos: ToDo[];
   currentTodo: string;
   currentRank: string;
@@ -14,12 +14,13 @@ interface State {
 
 interface Store {
   state: State;
-  listeners: Set<() => void>;
+  subscribers: Record<keyof State, Function[]>;
   addTodo: () => void;
   getState: () => State;
-  setPartial: (partial: Record<string, any>) => void;
-  setState: (newState: State) => void;
-  subscribe: (listener: () => void) => () => void;
+  setPartial: (partial: Partial<State>) => void;
+  setState: (part: keyof State | keyof State[], newState: State) => void;
+  subscribe: (part: keyof State | keyof State[], subscriber: Function) => void;
+  notifySubscribers: (part: keyof State | keyof State[]) => void;
 }
 
 export const internalStore: Store = {
@@ -28,7 +29,11 @@ export const internalStore: Store = {
     currentTodo: "",
     todos: [],
   },
-  listeners: new Set<() => void>(),
+  subscribers: {
+    currentTodo: [],
+    currentRank: [],
+    todos: [],
+  },
   getState() {
     return this.state;
   },
@@ -48,25 +53,66 @@ export const internalStore: Store = {
         },
       ],
     };
-    this.setState(newState);
+    this.setState(
+      ["todos", "currentRank", "currentTodo"] as unknown as keyof State[],
+      newState
+    );
   },
-  setPartial(partial: Record<keyof Store, any>) {
-    const newState = { ...this.state, ...partial };
-    this.setState(newState);
+  setPartial(partial: Partial<State>) {
+    this.setState(Object.keys(partial) as unknown as keyof State[], {
+      ...this.state,
+      ...partial,
+    });
   },
-  setState(newState: State) {
+  setState(part: keyof State | keyof State[], newState: State) {
     this.state = newState;
-    this.listeners.forEach((listener: () => void) => listener()); // Notify listeners
+    this.notifySubscribers(part);
   },
-  subscribe(listener: () => void) {
-    this.listeners.add(listener);
-    return () => this.listeners.delete(listener); // Unsubscribe when the component unmounts
+  subscribe(part: keyof State | keyof State[], subscriber: Function) {
+    if (Array.isArray(part)) {
+      part.forEach((p) => {
+        this.subscribers[p as keyof State].push(subscriber);
+      });
+    } else {
+      this.subscribers[part as keyof State].push(subscriber);
+    }
+  },
+
+  notifySubscribers(part: keyof State | keyof State[]) {
+    if (Array.isArray(part)) {
+      part.forEach((p) => {
+        this.subscribers[p as keyof State]?.forEach((subscriber) =>
+          subscriber()
+        );
+      });
+    } else {
+      this.subscribers[part as keyof State]?.forEach((subscriber) =>
+        subscriber()
+      );
+    }
   },
 };
 
-export function useCustomStore() {
+export function useCustomStore(part: keyof State | keyof State[]) {
   const getSnapshot = () => internalStore.getState();
-  const subscribe = (callback: () => void) => internalStore.subscribe(callback);
+  const subscribe = (callback: () => void) => {
+    internalStore.subscribe(part, callback);
+    return () => {
+      if (Array.isArray(part)) {
+        part.forEach((p) => {
+          internalStore.subscribers[p as keyof State] =
+            internalStore.subscribers[p as keyof State].filter(
+              (sub) => sub !== callback
+            );
+        });
+      } else {
+        internalStore.subscribers[part as keyof State] =
+          internalStore.subscribers[part as keyof State].filter(
+            (sub) => sub !== callback
+          );
+      }
+    };
+  };
 
   return useSyncExternalStore(subscribe, getSnapshot);
 }
