@@ -12,104 +12,90 @@ export interface State {
   currentRank: string;
 }
 
-interface Store {
-  state: State;
-  subscribers: Record<keyof State, Function[]>;
-  addTodo: () => void;
-  getState: () => State;
-  setPartial: (partial: Partial<State>) => void;
-  setState: (part: keyof State | keyof State[], newState: State) => void;
-  subscribe: (part: keyof State | keyof State[], subscriber: Function) => void;
-  notifySubscribers: (part: keyof State | keyof State[]) => void;
-}
+export type StateKey<T extends Record<string, any>> = keyof T;
+export type StateKeyOrKeys<T extends Record<string, any>> =
+  | StateKey<T>
+  | StateKey<T>[];
+class Store<T extends Record<string, any>> {
+  state: T;
+  subscribers: Record<keyof T, Function[]>;
 
-export const internalStore: Store = {
-  state: {
-    currentRank: "",
-    currentTodo: "",
-    todos: [],
-  },
-  subscribers: {
-    currentTodo: [],
-    currentRank: [],
-    todos: [],
-  },
+  constructor(initialState: T) {
+    this.state = { ...initialState };
+    this.subscribers = Object.keys(initialState).reduce((acc, key) => {
+      acc[key as keyof T] = [];
+      return acc;
+    }, {} as Record<keyof T, Function[]>);
+  }
+
   getState() {
     return this.state;
-  },
-  addTodo() {
-    const newId =
-      (this.state.todos?.[this.state.todos?.length - 1]?.id || 0) + 1;
-    const newState = {
-      ...this.state,
-      currentRank: "",
-      currentTodo: "",
-      todos: [
-        ...this.state.todos,
-        {
-          id: newId,
-          text: this.state.currentTodo,
-          rank: this.state.currentRank,
-        },
-      ],
-    };
-    this.setState(
-      ["todos", "currentRank", "currentTodo"] as unknown as keyof State[],
-      newState
-    );
-  },
-  setPartial(partial: Partial<State>) {
-    this.setState(Object.keys(partial) as unknown as keyof State[], {
-      ...this.state,
-      ...partial,
-    });
-  },
-  setState(part: keyof State | keyof State[], newState: State) {
+  }
+
+  setState(part: StateKeyOrKeys<T>, updateFunc: (state: T) => T) {
+    const newState = updateFunc(this.state);
     this.state = newState;
     this.notifySubscribers(part);
-  },
-  subscribe(part: keyof State | keyof State[], subscriber: Function) {
+  }
+
+  subscribe(part: StateKeyOrKeys<T>, subscriber: Function) {
     if (Array.isArray(part)) {
       part.forEach((p) => {
-        this.subscribers[p as keyof State].push(subscriber);
+        this.subscribers[p].push(() => subscriber());
       });
     } else {
-      this.subscribers[part as keyof State].push(subscriber);
+      this.subscribers[part].push(() => subscriber());
     }
-  },
+  }
 
-  notifySubscribers(part: keyof State | keyof State[]) {
+  notifySubscribers(part: StateKeyOrKeys<T>) {
     if (Array.isArray(part)) {
       part.forEach((p) => {
-        this.subscribers[p as keyof State]?.forEach((subscriber) =>
-          subscriber()
-        );
+        this.subscribers[p]?.forEach((subscriber) => subscriber());
       });
     } else {
-      this.subscribers[part as keyof State]?.forEach((subscriber) =>
-        subscriber()
-      );
+      this.subscribers[part]?.forEach((subscriber) => subscriber());
     }
-  },
-};
+  }
+}
 
-export function useCustomStore(part: keyof State | keyof State[]) {
-  const getSnapshot = () => internalStore.getState();
+export let store: Store<any> | null = null;
+
+export function initializeStore<T extends Record<string, any>>(
+  initialState: T
+): Store<T> {
+  if (!store) {
+    store = new Store(initialState);
+  }
+  return store as Store<T>;
+}
+
+export function useCustomStore<T extends Record<StateKey<T>, any>>(
+  part: StateKeyOrKeys<T>
+) {
+  if (!store) {
+    throw new Error("Store was used before it is initialized.");
+  }
+  const getSnapshot = () => store?.getState() as T;
+
   const subscribe = (callback: () => void) => {
-    internalStore.subscribe(part, callback);
+    store?.subscribe(part, callback);
+
     return () => {
       if (Array.isArray(part)) {
         part.forEach((p) => {
-          internalStore.subscribers[p as keyof State] =
-            internalStore.subscribers[p as keyof State].filter(
+          if (store!.subscribers[p] && store?.subscribers[p]) {
+            store.subscribers[p] = store?.subscribers[p].filter(
               (sub) => sub !== callback
             );
+          }
         });
       } else {
-        internalStore.subscribers[part as keyof State] =
-          internalStore.subscribers[part as keyof State].filter(
+        if (store!.subscribers[part] && store?.subscribers[part]) {
+          store.subscribers[part as keyof T] = store?.subscribers[part].filter(
             (sub) => sub !== callback
           );
+        }
       }
     };
   };
