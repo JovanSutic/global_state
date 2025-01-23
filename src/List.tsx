@@ -1,7 +1,7 @@
-import { useCustomStore } from "./store";
+import { State, useCustomStore } from "./store";
 
 const List = () => {
-  const { todos } = useCustomStore("todos");
+  const { todos } = useCustomStore<State>(["todos"]);
   
   return (
     <div className="item">
