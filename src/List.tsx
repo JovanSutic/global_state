@@ -1,4 +1,5 @@
-import { State, useCustomStore } from "./store";
+import { useCustomStore } from "small-store-lib";
+import { State } from "./store.types";
 
 const List = () => {
   const { todos } = useCustomStore<State>(["todos"]);

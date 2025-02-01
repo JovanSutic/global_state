@@ -1,4 +1,5 @@
-import { store, useCustomStore, State } from "./store";
+import { store, useCustomStore } from "small-store-lib";
+import { State } from "./store.types";
 
 const TodoForm = () => {
   const { currentTodo, currentRank } = useCustomStore<State>([

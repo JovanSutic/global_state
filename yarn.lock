@@ -8602,6 +8602,11 @@ slash@^4.0.0:
   resolved "https://registry.yarnpkg.com/slash/-/slash-4.0.0.tgz#2422372176c4c6c5addb5e2ada885af984b396a7"
   integrity sha512-3dOsAHXXUkQTpOYcoAxLIorMTp4gIQr5IW3iVb7A7lFIp0VHhnynm9izx6TssdrIcVIESAlVjtnO2K8bg+Coew==
 
+small-store-lib@1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/small-store-lib/-/small-store-lib-1.0.0.tgz#bc903c35401eac19d10f4458bbcbb9c90775503f"
+  integrity sha512-idhy3QmsRaS6MHzT4Jb0oPlg+/0VEQooo7u2flp0xJ2vd/t1LNDmO5hYHNvsvo0J0eZB8VYR3aJp0YBSlEjmvA==
+
 sockjs@^0.3.24:
   version "0.3.24"
   resolved "https://registry.yarnpkg.com/sockjs/-/sockjs-0.3.24.tgz#c9bc8995f33a111bea0395ec30aa3206bdb5ccce"

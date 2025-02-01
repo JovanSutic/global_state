@@ -3,7 +3,8 @@ import "./App.css";
 import Hero from "./Hero";
 import List from "./List";
 import TodoForm from "./TodoForm";
-import { initializeStore, store, State } from "./store";
+import { store, initializeStore } from "small-store-lib";
+import {State} from './store.types';
 
 function App() {
   const [ready, setReady] = useState<boolean>(false);
@@ -17,7 +18,7 @@ function App() {
     } else {
       setReady(true);
     }
-  }, [store]);
+  }, []);
 
   return (
     <div className="App">
